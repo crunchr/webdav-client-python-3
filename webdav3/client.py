@@ -156,6 +156,10 @@ class Client(object):
                             the specified action.
         :return: HTTP response of request.
         """
+        if self.webdav.enable_kerberos:
+            auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
+        else:
+            auth = (self.webdav.login, self.webdav.password)
         response = requests.request(
             method=Client.requests[action],
             url=self.get_url(path),
