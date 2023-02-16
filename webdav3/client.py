@@ -254,7 +254,7 @@ class Client(object):
         urns = WebDavXmlUtils.parse_get_list_response(response.content)
 
         path = Urn.normalize_path(directory_urn.path()) if self.webdav.strip_webdav_prefix else Urn.normalize_path(self.get_full_path(directory_urn))
--       return [urn.filename() for urn in urns if Urn.compare_path(path, urn.path()) is False]
+        return [urn.filename() for urn in urns if Urn.compare_path(path, urn.path()) is False]
 
     @wrap_connection_error
     def free(self):
