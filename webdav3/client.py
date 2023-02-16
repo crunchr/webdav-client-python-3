@@ -10,7 +10,7 @@ from re import sub
 
 import lxml.etree as etree
 import requests
-from requests_kerberos import HTTPKerberosAuth
+from requests_kerberos import HTTPKerberosAuth, DISABLED
 
 from webdav3.connection import *
 from webdav3.exceptions import *
@@ -156,10 +156,14 @@ class Client(object):
                             the specified action.
         :return: HTTP response of request.
         """
+        if self.webdav.enable_kerberos:
+            auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
+        else:
+            auth = (self.webdav.login, self.webdav.password)
         response = requests.request(
             method=Client.requests[action],
             url=self.get_url(path),
-            auth=HTTPKerberosAuth() if self.webdav.enable_kerberos_auth else (self.webdav.login, self.webdav.password),
+            auth=auth,
             headers=self.get_headers(action, headers_ext),
             timeout=self.timeout,
             data=data,
@@ -249,8 +253,8 @@ class Client(object):
         response = self.execute_request(action='list', path=directory_urn.quote())
         urns = WebDavXmlUtils.parse_get_list_response(response.content)
 
-        path = Urn.normalize_path(self.get_full_path(directory_urn))
-        return [urn.filename() for urn in urns if Urn.compare_path(path, urn.path()) is False]
+        path = Urn.normalize_path(directory_urn.path()) if self.webdav.strip_webdav_prefix else Urn.normalize_path(self.get_full_path(directory_urn))
+        return [(urn.filename(), modified_date) for urn, modified_date in urns if Urn.compare_path(path, urn.path()) is False]
 
     @wrap_connection_error
     def free(self):
@@ -345,7 +349,7 @@ class Client(object):
 
         os.makedirs(local_path)
 
-        for resource_name in self.list(urn.path()):
+        for resource_name, _ in self.list(urn.path()):
             _remote_path = "{parent}{name}".format(parent=urn.path(), name=resource_name)
             _local_path = os.path.join(local_path, resource_name)
             self.download(local_path=_local_path, remote_path=_remote_path, progress=progress)
@@ -574,7 +578,7 @@ class Client(object):
             raise RemoteResourceNotFound(remote_path)
 
         response = self.execute_request(action='info', path=urn.quote())
-        path = self.get_full_path(urn)
+        path = urn.path() if self.webdav.strip_webdav_prefix else self.get_full_path(urn)
         return WebDavXmlUtils.parse_info_response(content=response.content, path=path, hostname=self.webdav.hostname)
 
     @wrap_connection_error
@@ -591,7 +595,7 @@ class Client(object):
             raise RemoteResourceNotFound(remote_path)
 
         response = self.execute_request(action='info', path=parent_urn.quote())
-        path = self.get_full_path(urn)
+        path = urn.path() if self.webdav.strip_webdav_prefix else self.get_full_path(urn)
         return WebDavXmlUtils.parse_is_dir_response(content=response.content, path=path, hostname=self.webdav.hostname)
 
     @wrap_connection_error
@@ -815,8 +819,13 @@ class WebDavXmlUtils:
         """
         try:
             tree = etree.fromstring(content)
-            hrees = [Urn.separate + unquote(urlsplit(hree.text).path) for hree in tree.findall(".//{DAV:}href")]
-            return [Urn(hree) for hree in hrees]
+            responses = tree.findall("{DAV:}response")
+            hrees = []
+            for resp in responses:
+                href = resp.findtext("{DAV:}href")
+                modified_date = resp.findtext(".//{DAV:}getlastmodified")
+                hrees.append((Urn(Urn.separate + unquote(urlsplit(href).path)), modified_date))
+            return hrees
         except etree.XMLSyntaxError:
             return list()
 
