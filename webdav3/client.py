@@ -595,7 +595,7 @@ class Client(object):
             raise RemoteResourceNotFound(remote_path)
 
         response = self.execute_request(action='info', path=parent_urn.quote())
-        path = self.get_full_path(urn)
+        path = urn.path() if self.webdav.strip_webdav_prefix else self.get_full_path(urn)
         return WebDavXmlUtils.parse_is_dir_response(content=response.content, path=path, hostname=self.webdav.hostname)
 
     @wrap_connection_error
