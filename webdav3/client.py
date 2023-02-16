@@ -10,7 +10,7 @@ from re import sub
 
 import lxml.etree as etree
 import requests
-from requests_kerberos import HTTPKerberosAuth
+from requests_kerberos import HTTPKerberosAuth, DISABLED
 
 from webdav3.connection import *
 from webdav3.exceptions import *
