@@ -253,7 +253,7 @@ class Client(object):
         response = self.execute_request(action='list', path=directory_urn.quote())
         urns = WebDavXmlUtils.parse_get_list_response(response.content)
 
-        path = Urn.normalize_path(self.get_full_path(directory_urn))
+        path = Urn.normalize_path(directory_urn)
         return [urn.filename() for urn in urns if Urn.compare_path(path, urn.path()) is False]
 
     @wrap_connection_error
