@@ -22,7 +22,7 @@ class WebDAVSettings(ConnectionSettings):
     ns = "webdav:"
     prefix = "webdav_"
     keys = {'hostname', 'login', 'password', 'token', 'root', 'cert_path', 'key_path', 'recv_speed', 'send_speed',
-            'verbose', 'enable_kerberos_auth'}
+            'verbose', 'enable_kerberos'}
 
     hostname = None
     login = None
@@ -34,7 +34,7 @@ class WebDAVSettings(ConnectionSettings):
     recv_speed = None
     send_speed = None
     verbose = None
-    enable_kerberos_auth = False
+    enable_kerberos = False
 
     def __init__(self, options):
 

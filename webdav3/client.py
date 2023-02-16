@@ -163,7 +163,7 @@ class Client(object):
         response = requests.request(
             method=Client.requests[action],
             url=self.get_url(path),
-            auth=HTTPKerberosAuth() if self.webdav.enable_kerberos_auth else (self.webdav.login, self.webdav.password),
+            auth=auth,
             headers=self.get_headers(action, headers_ext),
             timeout=self.timeout,
             data=data,
